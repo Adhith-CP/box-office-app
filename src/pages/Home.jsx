@@ -1,28 +1,48 @@
 import { useState } from "react";
+import { searchForShows, searchForPeople } from "../api/tvmaze";
+import SearchForm from "../components/SearchForm";
 
 const Home = () => {
-  const [searchStr, setSearchStr] = useState("");
-  const onSearchInputChange = (e) => {
-    setSearchStr(e.target.value);
+  const [apiData, setApiData] = useState(null);
+  const [apiDataError, setApiDataError] = useState(null);
+
+  const onSearch = async ({ q, searchOption }) => {
+    try {
+      setApiDataError(null);
+
+      let result;
+      if (searchOption === "shows") {
+        result = await searchForShows(q);
+      } else {
+        result = await searchForPeople(q);
+      }
+      
+      setApiData(result);
+    } catch (error) {
+      setApiDataError(error);
+    }
   };
 
-  const onSearch = async (e) => {
-    e.preventDefault();
+  const renderApiData = () => {
+    if (apiDataError) {
+      return <div>Error occurred: {apiDataError.message}</div>;
+    }
 
-    const response = await fetch(
-      `https://api.tvmaze.com/search/shows?q=${searchStr}`
-    );
-    const body = response.json;
-    console.log(body);
+    if (apiData && apiData.length > 0) {
+      return apiData.map((data) => (
+        <div key={data.show.id}>{data.show.name}</div>
+      ));
+    }
 
-    // https://api.tvmaze.com/search/shows?q=girls
+    return null;
   };
+
   return (
     <div>
-      <form onSubmit={onSearch}>
-        <input type="text" value={searchStr} onChange={onSearchInputChange} />
-        <button type="submit">Search</button>
-      </form>
+      <SearchForm onSearch={onSearch} />
+      {/* */}
+
+      <div>{renderApiData()}</div>
     </div>
   );
 };
